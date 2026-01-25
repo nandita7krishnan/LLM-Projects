@@ -134,3 +134,78 @@ def add_chunks_to_db(
     
     return stats
 
+
+def enrich_existing_chunks(
+    collection,
+    metadata_dict: dict,
+    batch_size: int = 100
+) -> dict:
+    """Update existing chunks with episode metadata (no re-embedding).
+    
+    Args:
+        collection: ChromaDB collection
+        metadata_dict: Dict mapping guest_name to EpisodeMetadata
+        batch_size: Number of chunks to process per batch
+        
+    Returns:
+        Dict with stats: updated, skipped, errors
+    """
+    stats = {"updated": 0, "skipped": 0, "errors": 0}
+    
+    # Get all existing chunks
+    all_data = collection.get()
+    if not all_data or not all_data.get('ids'):
+        return stats
+    
+    ids = all_data['ids']
+    metadatas = all_data['metadatas']
+    
+    # Process in batches
+    for i in range(0, len(ids), batch_size):
+        batch_ids = ids[i:i + batch_size]
+        batch_metas = metadatas[i:i + batch_size]
+        
+        updated_ids = []
+        updated_metas = []
+        
+        for chunk_id, meta in zip(batch_ids, batch_metas):
+            guest_name = meta.get('guest_name', '')
+            episode_meta = metadata_dict.get(guest_name)
+            
+            if not episode_meta:
+                stats["skipped"] += 1
+                continue
+            
+            # Check if already enriched
+            if meta.get('tactical_score') and meta.get('tactical_score') > 0:
+                stats["skipped"] += 1
+                continue
+            
+            try:
+                # Build updated metadata
+                updated_meta = dict(meta)
+                updated_meta.update({
+                    "topics": ",".join(episode_meta.topics),
+                    "guest_role": episode_meta.guest_role,
+                    "company_stage": episode_meta.company_stage,
+                    "tactical_score": episode_meta.tactical_score,
+                    "contrarian_score": episode_meta.contrarian_score,
+                    "summary": episode_meta.one_line_summary
+                })
+                
+                updated_ids.append(chunk_id)
+                updated_metas.append(updated_meta)
+                stats["updated"] += 1
+                
+            except Exception as e:
+                stats["errors"] += 1
+        
+        # Batch update
+        if updated_ids:
+            collection.update(
+                ids=updated_ids,
+                metadatas=updated_metas
+            )
+    
+    return stats
+

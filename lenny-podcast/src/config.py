@@ -12,9 +12,9 @@ CHROMA_DB_DIR = BASE_DIR / "data" / "chroma_db"
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 CHROMA_DB_DIR.mkdir(parents=True, exist_ok=True)
 
-# Model settings
-LLM_MODEL = "llama3.1:8b"
-SMALL_LLM_MODEL = "llama3.2:3b"
+# Model settings - using smaller/faster models
+LLM_MODEL = "llama3.2:latest"  # Was llama3.1:8b - this is faster
+SMALL_LLM_MODEL = "llama3.2:latest"  # For quick answers
 EMBEDDING_MODEL = "nomic-embed-text"
 
 # Chunking settings
