@@ -1,6 +1,10 @@
 """Configuration settings for the Lenny Podcast Intelligence Engine."""
 
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file from parent llm folder
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # Directories
 BASE_DIR = Path(__file__).parent.parent
@@ -23,4 +27,10 @@ CHUNK_OVERLAP = 50  # tokens
 
 # Ollama settings
 OLLAMA_BASE_URL = "http://localhost:11434"
+
+# Groq settings (fast cloud inference - get free key at console.groq.com)
+import os
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL = "llama-3.1-8b-instant"  # Fast and free
+USE_GROQ = bool(GROQ_API_KEY)  # Auto-enable if key is set
 

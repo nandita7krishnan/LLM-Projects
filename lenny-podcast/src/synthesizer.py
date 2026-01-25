@@ -1,10 +1,51 @@
 """Synthesis and answer generation using LLM."""
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 import requests
 from retriever import retrieve_chunks, RetrievalResult
-from config import LLM_MODEL, SMALL_LLM_MODEL
+from config import LLM_MODEL, SMALL_LLM_MODEL, GROQ_API_KEY, GROQ_MODEL, USE_GROQ
+
+# Initialize Groq client if available
+_groq_client = None
+if USE_GROQ:
+    try:
+        from groq import Groq
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    except ImportError:
+        pass
+
+
+def _generate_with_groq(prompt: str, model: str = GROQ_MODEL) -> str:
+    """Generate text using Groq API (fast cloud inference)."""
+    if not _groq_client:
+        raise Exception("Groq client not initialized. Set GROQ_API_KEY env var.")
+    
+    response = _groq_client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=1024
+    )
+    return response.choices[0].message.content
+
+
+def _generate_with_ollama(prompt: str, model: str) -> str:
+    """Generate text using local Ollama."""
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={"model": model, "prompt": prompt, "stream": False}
+    )
+    if response.status_code != 200:
+        raise Exception(f"Ollama API error: {response.status_code}")
+    return response.json().get("response", "")
+
+
+def _generate(prompt: str, model: str = LLM_MODEL) -> str:
+    """Generate text using Groq if available, otherwise Ollama."""
+    if USE_GROQ and _groq_client:
+        return _generate_with_groq(prompt)
+    return _generate_with_ollama(prompt, model)
 
 
 @dataclass
@@ -17,7 +58,7 @@ class SynthesizedAnswer:
 
 def synthesize_answer(
     query: str,
-    n_chunks: int = 10,
+    n_chunks: int = 5,  # Reduced for speed
     model: str = LLM_MODEL
 ) -> SynthesizedAnswer:
     """Generate a comprehensive answer from multiple sources.
@@ -61,20 +102,7 @@ Context:
 
 Answer:"""
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": model,
-            "prompt": prompt,
-            "stream": False
-        }
-    )
-    
-    if response.status_code != 200:
-        raise Exception(f"Ollama API error: {response.status_code}")
-    
-    result = response.json()
-    answer = result.get("response", "")
+    answer = _generate(prompt, model)
     
     # Build sources list
     sources = [
@@ -123,25 +151,12 @@ Context:
 
 Provide a concise 2-3 sentence answer:"""
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": model,
-            "prompt": prompt,
-            "stream": False
-        }
-    )
-    
-    if response.status_code != 200:
-        raise Exception(f"Ollama API error: {response.status_code}")
-    
-    result = response.json()
-    return result.get("response", "")
+    return _generate(prompt, model)
 
 
 def recommend_episodes(
     user_context: str,
-    n_chunks: int = 15,
+    n_chunks: int = 10,  # Reduced for speed
     model: str = LLM_MODEL
 ) -> SynthesizedAnswer:
     """Recommend episodes based on user context.
@@ -196,20 +211,7 @@ Order them from most to least relevant.
 
 Recommendations:"""
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": model,
-            "prompt": prompt,
-            "stream": False
-        }
-    )
-    
-    if response.status_code != 200:
-        raise Exception(f"Ollama API error: {response.status_code}")
-    
-    result = response.json()
-    answer = result.get("response", "")
+    answer = _generate(prompt, model)
     
     sources = [
         {
