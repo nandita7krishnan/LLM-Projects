@@ -103,6 +103,47 @@ st.markdown("""
         box-shadow: 8px 8px 0px var(--teal);
     }
     
+    .answer-box h1, .answer-box h2, .answer-box h3, 
+    .answer-box strong, .answer-box b {
+        font-family: 'Press Start 2P', monospace;
+        color: var(--coral);
+        display: block;
+        margin: 1.2rem 0 0.6rem 0;
+        padding: 0.5rem 0.8rem;
+        background: rgba(0,0,0,0.2);
+        border-left: 4px solid var(--teal);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        animation: glitch 0.3s ease-in-out;
+    }
+    
+    .answer-box h1:first-child, .answer-box h2:first-child, 
+    .answer-box h3:first-child, .answer-box strong:first-child {
+        margin-top: 0;
+    }
+    
+    .answer-box ul, .answer-box ol {
+        margin: 0.8rem 0 0.8rem 1.5rem;
+    }
+    
+    .answer-box li {
+        margin: 0.4rem 0;
+        position: relative;
+    }
+    
+    .answer-box li::marker {
+        color: var(--coral);
+    }
+    
+    @keyframes glitch {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-2px); }
+        40% { transform: translateX(2px); }
+        60% { transform: translateX(-1px); }
+        80% { transform: translateX(1px); }
+    }
+    
     /* Input styling */
     .stTextInput > div > div > input {
         font-family: 'VT323', monospace;
@@ -222,12 +263,133 @@ st.markdown("""
         font-size: 1rem;
         border: 2px solid var(--purple);
     }
+    
+    /* ═══ QUIRKY STUFF ═══ */
+    
+    /* Floating pixels background */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: 
+            radial-gradient(var(--teal) 1px, transparent 1px),
+            radial-gradient(var(--coral) 1px, transparent 1px);
+        background-size: 50px 50px, 80px 80px;
+        background-position: 0 0, 25px 25px;
+        opacity: 0.15;
+        pointer-events: none;
+        z-index: -1;
+        animation: float 20s linear infinite;
+    }
+    
+    @keyframes float {
+        0% { transform: translate(0, 0); }
+        50% { transform: translate(-10px, -10px); }
+        100% { transform: translate(0, 0); }
+    }
+    
+    /* Blink cursor effect on title */
+    .pixel-title::after {
+        content: "_";
+        animation: blink 1s step-end infinite;
+    }
+    
+    @keyframes blink {
+        50% { opacity: 0; }
+    }
+    
+    /* Scanline effect on answer box */
+    .answer-box::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,0.03) 2px,
+            rgba(0,0,0,0.03) 4px
+        );
+        pointer-events: none;
+    }
+    
+    .answer-box {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Wiggle on hover for cards */
+    .result-card {
+        transition: transform 0.2s ease;
+    }
+    
+    .result-card:hover {
+        animation: wiggle 0.3s ease;
+    }
+    
+    @keyframes wiggle {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-1deg); }
+        75% { transform: rotate(1deg); }
+    }
+    
+    /* Rainbow shimmer on buttons */
+    .stButton > button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,0.3),
+            transparent
+        );
+        transition: 0.5s;
+    }
+    
+    .stButton > button:hover::before {
+        left: 100%;
+    }
+    
+    .stButton > button {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Typing effect pulse on input */
+    .stTextInput > div > div > input:focus {
+        animation: pulse-border 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-border {
+        0%, 100% { border-color: var(--coral); }
+        50% { border-color: var(--teal); }
+    }
+    
+    /* Fun tooltip on divider hover */
+    .pixel-divider {
+        cursor: crosshair;
+        transition: height 0.2s ease;
+    }
+    
+    .pixel-divider:hover {
+        height: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Header
 st.markdown('<div class="pixel-title">🎮 LENNY.EXE 🎮</div>', unsafe_allow_html=True)
-st.markdown('<div class="pixel-subtitle">[ 284 episodes of PM wisdom at your fingertips ]</div>', unsafe_allow_html=True)
+st.markdown('<div class="pixel-subtitle">[ INSERT COIN... jk it\'s free • 284 episodes of wisdom ]</div>', unsafe_allow_html=True)
 st.markdown('<div class="pixel-divider"></div>', unsafe_allow_html=True)
 
 # Mode selection
@@ -254,9 +416,9 @@ elif recs_mode:
 st.markdown("<br>", unsafe_allow_html=True)
 
 placeholders = {
-    'quick': "What's the best way to say no?",
-    'deep': "How do top PMs think about pricing?",
-    'recommend': "I'm a new PM at a Series A startup..."
+    'quick': "What's the secret to saying no without crying?",
+    'deep': "How do galaxy-brain PMs think about pricing?",
+    'recommend': "I'm a confused PM at a chaotic Series A startup..."
 }
 
 query = st.text_input(
@@ -270,7 +432,7 @@ if query:
     st.markdown('<div class="pixel-divider"></div>', unsafe_allow_html=True)
     
     if st.session_state.mode == 'quick':
-        with st.spinner("LOADING..."):
+        with st.spinner("🕹️ CONSULTING THE ORACLE..."):
             answer = quick_answer(query)
         
         st.markdown(f'<div class="answer-box">{answer}</div>', unsafe_allow_html=True)
@@ -290,7 +452,7 @@ if query:
                 """, unsafe_allow_html=True)
     
     elif st.session_state.mode == 'deep':
-        with st.spinner("SYNTHESIZING..."):
+        with st.spinner("🧠 BRAIN CELLS ACTIVATING..."):
             result = synthesize_answer(query, n_chunks=5)
         
         st.markdown(f'<div class="answer-box">{result.answer}</div>', unsafe_allow_html=True)
@@ -309,7 +471,7 @@ if query:
                     """, unsafe_allow_html=True)
     
     elif st.session_state.mode == 'recommend':
-        with st.spinner("FINDING EPISODES..."):
+        with st.spinner("📼 REWINDING THE TAPES..."):
             result = recommend_episodes(query, n_chunks=10)
         
         st.markdown(f'<div class="answer-box">{result.answer}</div>', unsafe_allow_html=True)
@@ -330,6 +492,7 @@ st.markdown('<div class="pixel-divider"></div>', unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align: center; font-family: 'VT323', monospace; color: #827397; font-size: 1.2rem;">
     [ PRESS START TO LEARN ] • 284 episodes • 13,014 chunks • ∞ wisdom
+    <br><span style="font-size: 0.9rem; opacity: 0.7;">⬆️⬆️⬇️⬇️⬅️➡️⬅️➡️🅱️🅰️ for secret mode (jk)</span>
 </div>
 """, unsafe_allow_html=True)
 
